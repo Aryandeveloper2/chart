@@ -133,26 +133,18 @@ class ControllerExtensionDashboardChart extends Controller {
 				}
 				break;
 			case 'week':
-				$results = $this->model_extension_dashboard_chart->getTotalOrdersByWeek();
-
-				foreach ($results as $key => $value) {
-					$json['order']['data'][] = array($key, $value['total']);
-				}
-
-				$results = $this->model_extension_dashboard_chart->getTotalCustomersByWeek();
-
-				foreach ($results as $key => $value) {
-					$json['customer']['data'][] = array($key, $value['total']);
-				}
-
-				$date_start = strtotime('-' . date('w') . ' days');
-
-				for ($i = 0; $i < 7; $i++) {
-					$date = date('Y-m-d', $date_start + ($i * 86400));
-
-					$json['xaxis'][] = array(date('w', strtotime($date)), date('D', strtotime($date)));
-				}
-				break;
+					$results = $this->model_extension_dashboard_chart->getTotalOrdersByWeekFarsi();
+					foreach ($results as $key => $value) {
+						$json['order']['data'][] = array($key, $value['total']);
+						$json['xaxis'][] = array($key, $value['day']); 
+					}
+				
+					$results = $this->model_extension_dashboard_chart->getTotalCustomersByWeekFarsi();
+					foreach ($results as $key => $value) {
+						$json['customer']['data'][] = array($key, $value['total']);
+					}
+				
+					break;
 			case 'month':
 				$results = $this->model_extension_dashboard_chart->getTotalOrdersByMonth();
 

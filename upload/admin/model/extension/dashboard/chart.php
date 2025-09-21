@@ -28,6 +28,41 @@ class ModelExtensionDashboardChart extends Model {
 		return $order_data;
 	}
 
+	public function getTotalOrdersByWeekFarsi() {
+		$order_data = array();
+	
+		$today = date('w'); // 0 = یکشنبه, 6 = شنبه
+		$days_since_saturday = ($today == 6) ? 0 : ($today + 1) % 7;
+		$date_start = strtotime("today -{$days_since_saturday} days");
+		$date_start_midnight = strtotime(date('Y-m-d', $date_start));
+	
+		for ($i = 0; $i < 7; $i++) {
+			$date = date('Y-m-d', $date_start_midnight + ($i * 86400));
+			$order_data[$i] = array(
+				'day' => jdate('l', strtotime($date)),
+				'total' => 0
+			);
+		}
+	
+		$query = $this->db->query("
+			SELECT DATE(date_added) AS date_only, COUNT(*) AS total
+			FROM `" . DB_PREFIX . "order`
+			WHERE order_status_id > 0
+			  AND DATE(date_added) >= '" . $this->db->escape(date('Y-m-d', $date_start_midnight)) . "'
+			GROUP BY DATE(date_added)
+		");
+	
+		foreach ($query->rows as $result) {
+			$index = (int)((strtotime($result['date_only']) - $date_start_midnight) / 86400);
+	
+			if ($index >= 0 && $index < 7) {
+				$order_data[$index]['total'] = (int)$result['total'];
+			}
+		}
+	
+		return $order_data;
+	}
+
 	public function getTotalOrdersByWeek() {
 		$implode = array();
 
@@ -140,6 +175,40 @@ class ModelExtensionDashboardChart extends Model {
 		return $customer_data;
 	}
 
+	public function getTotalCustomersByWeekFarsi(){
+		$customer_data = array();
+	
+		// شروع هفته = شنبه
+		$today = date('w'); 
+		$days_since_saturday = ($today == 6) ? 0 : ($today + 1);
+		$date_start = strtotime("-{$days_since_saturday} days");
+
+		for ($i = 0; $i < 7; $i++) {
+			$date = date('Y-m-d', $date_start + ($i * 86400));
+			$customer_data[$i] = array(
+				'day' => jdate('l', strtotime($date)),
+				'total' => 0
+			);
+		}
+	
+		$query = $this->db->query("
+			SELECT DATE(date_added) AS date_added, COUNT(*) AS total
+			FROM `" . DB_PREFIX . "customer` 
+			WHERE DATE(date_added) >= DATE('" . $this->db->escape(date('Y-m-d', $date_start)) . "')
+			GROUP BY DATE(date_added)
+		");
+	
+		foreach ($query->rows as $result) {
+			$date_only = date('Y-m-d', strtotime($result['date_added']));
+			$index = (int)((strtotime($date_only) - $date_start) / 86400);
+	
+			if ($index >= 0 && $index < 7) {
+				$customer_data[$index]['total'] += (int)$result['total'];
+			}
+		}
+	
+		return $customer_data;
+	}
 	public function getTotalCustomersByWeek() {
 		$customer_data = array();
 
