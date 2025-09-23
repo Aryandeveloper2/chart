@@ -11,73 +11,174 @@
     <h3 class="panel-title"><i class="fa fa-bar-chart-o"></i> {{ heading_title }}</h3>
   </div>
   <div class="panel-body">
-    <div id="chart-sale" style="width: 100%; height: 260px;"></div>
+    <div style="position: relative; height:260px; width:100%;">
+	<div id="chart-legend" style="position: relative;"></div>
+      <canvas id="chart-sale"></canvas>
+    </div>
   </div>
 </div>
-<script type="text/javascript" src="view/javascript/jquery/flot/jquery.flot.js"></script> 
-<script type="text/javascript" src="view/javascript/jquery/flot/jquery.flot.resize.min.js"></script>
-<script type="text/javascript"><!--
+<script type="text/javascript" src="view/javascript/chartjs/chartjs.js"></script> 
+<script type="text/javascript">
+const getOrCreateLegendList = (chart, id) => {
+  const legendContainer = document.getElementById(id);
+  let listContainer = legendContainer.querySelector('ul');
+  if (!listContainer) {
+    listContainer = document.createElement('ul');
+    listContainer.style.display = 'flex';
+    listContainer.style.flexDirection = 'column';
+    listContainer.style.justifyContent = 'flex-end'; 
+    listContainer.style.padding = '2px 5px';
+    listContainer.style.fontSize = '10px'; 
+    listContainer.style.gap = '2px';
+    legendContainer.style.position = 'absolute';
+    legendContainer.style.top = '15px';
+    legendContainer.style.right = '13px';
+    legendContainer.style.pointerEvents = 'auto';
+    legendContainer.appendChild(listContainer);
+  }
+  return listContainer;
+};
+
+let chartInstance = null;
 $('#range a').on('click', function(e) {
-	e.preventDefault();
-	
-	$(this).parent().parent().find('li').removeClass('active');
-	
-	$(this).parent().addClass('active');
-	
-	$.ajax({
-		type: 'get',
-		url: 'index.php?route=extension/dashboard/chart/chart&user_token={{ user_token }}&range=' + $(this).attr('href'),
-		dataType: 'json',
-		success: function(json) {
-            if (typeof json['order'] == 'undefined') { return false; }
-			
-			var option = {	
-				shadowSize: 0,
-				colors: ['#9FD5F1', '#1065D2'],
-				bars: { 
-					show: true,
-					fill: true,
-					lineWidth: 1
-				},
-				grid: {
-					backgroundColor: '#FFFFFF',
-					hoverable: true
-				},
-				points: {
-					show: false
-				},
-				xaxis: {
-					show: true,
-            		ticks: json['xaxis']
-				}
-			}
-			
-			$.plot('#chart-sale', [json['order'], json['customer']], option);	
+    e.preventDefault();
+    $(this).parent().parent().find('li').removeClass('active');
+    $(this).parent().addClass('active');
+    
+    $.ajax({
+        type: 'get',
+        url: 'index.php?route=extension/dashboard/chart/chart&user_token={{ user_token }}&range=' + $(this).attr('href'),
+        dataType: 'json',
+        success: function(json) {
+            
+            if (typeof json['order'] == 'undefined') { 
+                return false; 
+            }
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            const labels = [];
+            const orderData = [];
+            const customerData = [];
+            
+            if (json['xaxis'] && Array.isArray(json['xaxis'])) {
+                json['xaxis'].forEach(function(item) {
+                    if (Array.isArray(item) && item.length >= 2) {
+                        labels.push(item[1]);
+                    }
+                });
+            }
+            if (json['order'] && json['order']['data'] && Array.isArray(json['order']['data'])) {
+                json['order']['data'].forEach(function(item) {
+                    if (Array.isArray(item) && item.length >= 2) {
+                        orderData.push(item[1]); 
+                    }
+                });
+            }
+            if (json['customer'] && json['customer']['data'] && Array.isArray(json['customer']['data'])) {
+                json['customer']['data'].forEach(function(item) {
+                    if (Array.isArray(item) && item.length >= 2) {
+                        customerData.push(item[1]); 
+                    }
+                });
+            }
+            
+            if (orderData.length === 0 && customerData.length === 0) {
+                $('#chart-sale').closest('.panel-body').html('<div class="text-center text-muted"><i class="fa fa-exclamation-circle"></i> داده‌ای برای نمایش وجود ندارد</div>');
+                return;
+            }
+            
+            // ایجاد نمودار
+            try {
+                const ctx = document.getElementById('chart-sale').getContext('2d');
+                chartInstance = new Chart(ctx, {
 					
-			$('#chart-sale').bind('plothover', function(event, pos, item) {
-				$('.tooltip').remove();
-			  
-				if (item) {
-					$('<div id="tooltip" class="tooltip top in"><div class="tooltip-arrow"></div><div class="tooltip-inner">' + item.datapoint[1].toFixed(2) + '</div></div>').prependTo('body');
-					
-					$('#tooltip').css({
-						position: 'absolute',
-						left: item.pageX - ($('#tooltip').outerWidth() / 2),
-						top: item.pageY - $('#tooltip').outerHeight(),
-						pointer: 'cusror'
-					}).fadeIn('slow');	
-					
-					$('#chart-sale').css('cursor', 'pointer');		
-			  	} else {
-					$('#chart-sale').css('cursor', 'auto');
-				}
-			});
-		},
-        error: function(xhr, ajaxOptions, thrownError) {
-           alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
-        }
-	});
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: json['order']['label'] || 'سفارشات',
+                                data: orderData,
+                                backgroundColor: 'rgba(76, 176, 79, 0.6)',
+                                borderColor: 'rgb(76, 176, 79)',
+                                borderWidth: 2,
+								tension: 0.2,
+          						pointRadius: 3,
+          						pointHoverRadius: 10
+                            },
+                            {
+                                label: json['customer']['label'] || 'مشتریان',
+                                data: customerData,
+                                backgroundColor: 'rgb(39, 151, 242, 0.6)',
+                                borderColor: 'rgb(39, 151, 242)',
+                                borderWidth: 2,
+								tension: 0.2,
+          						pointRadius: 3,
+          						pointHoverRadius: 10
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                display: true
+                            },
+                            y: {
+                                beginAtZero: true,
+								ticks: {
+  									precision: 0 ,
+									beginAtZero: true
+								},
+								min: 0,
+            					suggestedMax: 4
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false,
+                            }
+                        }
+                    }
+                });
+	const legendList = getOrCreateLegendList(chartInstance, 'chart-legend');
+	legendList.innerHTML = '';
+	chartInstance.data.datasets.forEach(dataset => {
+    const li = document.createElement('li');
+    li.style.display = 'flex';
+    li.style.alignItems = 'center';
+    li.style.gap = '4px';
+    const box = document.createElement('span');
+    box.style.backgroundColor = dataset.borderColor;
+    box.style.width = '12px';
+    box.style.height = '12px';
+    box.style.display = 'inline-block';
+    const text = document.createElement('span');
+    text.innerText = dataset.label;
+    li.appendChild(box);
+    li.appendChild(text);
+    legendList.appendChild(li);
+	li.style.cursor = 'pointer';
+    li.addEventListener('click', () => {
+        dataset.hidden = !dataset.hidden; 
+        chartInstance.update();
+    });
 });
 
-$('#range .active a').trigger('click');
-//--></script> 
+            } catch (error) {
+                console.error('خطا در ایجاد نمودار:', error);
+            }
+        },
+        error: function(xhr, ajaxOptions, thrownError) {
+           console.error('Error:', thrownError);
+        }
+    });
+});
+
+
+$(document).ready(function() {
+    $('#range .active a').trigger('click');
+});
+//--></script>
