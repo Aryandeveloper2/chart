@@ -132,19 +132,23 @@ class ControllerExtensionDashboardChart extends Controller {
 					$json['xaxis'][] = array($i, $i);
 				}
 				break;
-			case 'week':
+				case 'week':
+					$week_days = ['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'];
+					$order_data = [];
 					$results = $this->model_extension_dashboard_chart->getTotalOrdersByWeekFarsi();
-					foreach ($results as $key => $value) {
-						$json['order']['data'][] = array($key, $value['total']);
-						$json['xaxis'][] = array($key, $value['day']); 
+					foreach ($week_days as $i => $day) {
+						$order_data[$i] = isset($results[$i]) ? $results[$i]['total'] : 0;
+						$json['xaxis'][] = array($i, $day);
 					}
-				
-					$results = $this->model_extension_dashboard_chart->getTotalCustomersByWeekFarsi();
-					foreach ($results as $key => $value) {
-						$json['customer']['data'][] = array($key, $value['total']);
+					$customer_results = $this->model_extension_dashboard_chart->getTotalCustomersByWeekFarsi();
+					foreach ($week_days as $i => $day) {
+						$total_customers = isset($customer_results[$i]) ? $customer_results[$i]['total'] : 0;
+						$json['customer']['data'][] = array($i, $total_customers);
 					}
-				
-					break;
+					foreach ($order_data as $i => $total) {
+						$json['order']['data'][] = array($i, $total);
+					}
+				break;
 			case 'month':
 				$results = $this->model_extension_dashboard_chart->getTotalOrdersByMonth();
 
