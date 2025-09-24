@@ -12,32 +12,126 @@
   </div>
   <div class="panel-body">
     <div style="position: relative; height:260px; width:100%;">
-	<div id="chart-legend" style="position: relative;"></div>
+	<div id="chart-legend"></div>
       <canvas id="chart-sale"></canvas>
     </div>
   </div>
 </div>
+<link href="view/stylesheet/chart.css" rel="stylesheet" type="text/css" />
 <script type="text/javascript" src="view/javascript/chartjs/chartjs.js"></script> 
 <script type="text/javascript">
+
 const getOrCreateLegendList = (chart, id) => {
   const legendContainer = document.getElementById(id);
   let listContainer = legendContainer.querySelector('ul');
+
   if (!listContainer) {
     listContainer = document.createElement('ul');
-    listContainer.style.display = 'flex';
-    listContainer.style.flexDirection = 'column';
-    listContainer.style.justifyContent = 'flex-end'; 
-    listContainer.style.padding = '2px 5px';
-    listContainer.style.fontSize = '10px'; 
-    listContainer.style.gap = '2px';
-    legendContainer.style.position = 'absolute';
-    legendContainer.style.top = '15px';
-    legendContainer.style.right = '13px';
-    legendContainer.style.pointerEvents = 'auto';
+    listContainer.classList.add('chart-legend-list');
+    legendContainer.classList.add('chart-legend-container');
     legendContainer.appendChild(listContainer);
   }
+
   return listContainer;
 };
+
+const renderCustomLegend = (chartInstance, id) => {
+  const legendList = getOrCreateLegendList(chartInstance, id);
+  legendList.innerHTML = '';
+
+  chartInstance.data.datasets.forEach((dataset, i) => {
+    const li = document.createElement('li');
+    li.classList.add('chart-legend-item');
+
+    const box = document.createElement('span');
+    box.classList.add('chart-legend-box');
+    box.style.backgroundColor = dataset.borderColor;
+
+    const text = document.createElement('span');
+    text.classList.add('chart-legend-text');
+    text.innerText = dataset.label;
+
+    li.appendChild(box);
+    li.appendChild(text);
+    legendList.appendChild(li);
+
+    li.addEventListener('click', () => {
+      dataset.hidden = !dataset.hidden;
+      chartInstance.update();
+    });
+  });
+};
+const getOrCreateTooltip = (chart) => {
+    let tooltipEl = chart.canvas.parentNode.querySelector('.custom-tooltip');
+    if (!tooltipEl) {
+        tooltipEl = document.createElement('div');
+        tooltipEl.classList.add('custom-tooltip'); 
+        chart.canvas.parentNode.appendChild(tooltipEl);
+    }
+    return tooltipEl;
+};
+
+const externalTooltipHandler = (context) => {
+    const { chart, tooltip } = context;
+    const tooltipEl = getOrCreateTooltip(chart);
+
+    if (tooltip.opacity === 0) {
+        tooltipEl.style.opacity = 0;
+        return;
+    }
+    tooltipEl.innerHTML = '';
+
+    // عنوان
+    if (tooltip.title) {
+        const titleDiv = document.createElement('div');
+        titleDiv.classList.add('tooltip-title');
+        titleDiv.textContent = tooltip.title.join(' ');
+        tooltipEl.appendChild(titleDiv);
+    }
+
+    // بدنه
+    if (tooltip.body) {
+        const bodyLines = tooltip.body.map(b => b.lines).flat();
+        bodyLines.forEach((line, i) => {
+            const colors = tooltip.labelColors[i];
+
+            const row = document.createElement('div');
+            row.classList.add('tooltip-row');
+
+            const colorBox = document.createElement('span');
+            colorBox.classList.add('tooltip-color');
+            colorBox.style.background = colors.backgroundColor;
+
+            const text = document.createElement('span');
+            text.classList.add('tooltip-text');
+            text.textContent = line;
+
+            row.appendChild(colorBox);
+            row.appendChild(text);
+            tooltipEl.appendChild(row);
+        });
+    }
+
+    // موقعیت
+    const { offsetLeft: canvasX, offsetTop: canvasY, clientWidth: canvasWidth, clientHeight: canvasHeight } = chart.canvas;
+    let left = canvasX + tooltip.caretX;
+    let top = canvasY + tooltip.caretY - tooltipEl.offsetHeight - 8; 
+    const tooltipRect = tooltipEl.getBoundingClientRect();
+    if (left + tooltipRect.width / 2 > window.innerWidth) {
+        left = window.innerWidth - tooltipRect.width / 2 - 10;
+    }
+    if (left - tooltipRect.width / 2 < 0) {
+        left = tooltipRect.width / 2 + 10;
+    }
+    if (top < 0) {
+        top = tooltip.caretY + canvasY + 8;
+    }
+    tooltipEl.style.left = left + 'px';
+    tooltipEl.style.top = top + 'px';
+    tooltipEl.style.opacity = 1;
+    tooltipEl.style.transform = 'translateX(-50%)';
+};
+
 
 let chartInstance = null;
 $('#range a').on('click', function(e) {
@@ -102,20 +196,20 @@ $('#range a').on('click', function(e) {
                                 data: orderData,
                                 backgroundColor: 'rgba(76, 176, 79, 0.6)',
                                 borderColor: 'rgb(76, 176, 79)',
-                                borderWidth: 2,
+                                borderWidth: 5,
 								tension: 0.2,
-          						pointRadius: 3,
-          						pointHoverRadius: 10
+          						pointRadius: 4,
+          						pointHoverRadius: 12,
                             },
                             {
                                 label: json['customer']['label'] || 'مشتریان',
                                 data: customerData,
                                 backgroundColor: 'rgb(39, 151, 242, 0.6)',
                                 borderColor: 'rgb(39, 151, 242)',
-                                borderWidth: 2,
+                                borderWidth: 5,
 								tension: 0.2,
-          						pointRadius: 3,
-          						pointHoverRadius: 10
+          						pointRadius: 4,
+          						pointHoverRadius: 12
                             }
                         ]
                     },
@@ -125,7 +219,7 @@ $('#range a').on('click', function(e) {
                         scales: {
                             x: {
                                 display: true,
-                                ticks: {
+                               ticks: {
                                     font: {
                                         family: 'main_font', 
                                     }
@@ -147,33 +241,19 @@ $('#range a').on('click', function(e) {
                         plugins: {
                             legend: {
                                 display: false,
-                            }
-                        }
+                            },
+                            tooltip: {
+                                enabled: false,
+                                external: externalTooltipHandler
+                            },                            
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index',
+                        },
                     }
                 });
-	const legendList = getOrCreateLegendList(chartInstance, 'chart-legend');
-	legendList.innerHTML = '';
-	chartInstance.data.datasets.forEach(dataset => {
-    const li = document.createElement('li');
-    li.style.display = 'flex';
-    li.style.alignItems = 'center';
-    li.style.gap = '4px';
-    const box = document.createElement('span');
-    box.style.backgroundColor = dataset.borderColor;
-    box.style.width = '12px';
-    box.style.height = '12px';
-    box.style.display = 'inline-block';
-    const text = document.createElement('span');
-    text.innerText = dataset.label;
-    li.appendChild(box);
-    li.appendChild(text);
-    legendList.appendChild(li);
-	li.style.cursor = 'pointer';
-    li.addEventListener('click', () => {
-        dataset.hidden = !dataset.hidden; 
-        chartInstance.update();
-    });
-});
+renderCustomLegend(chartInstance, 'chart-legend');
 
             } catch (error) {
                 console.error('خطا در ایجاد نمودار:', error);

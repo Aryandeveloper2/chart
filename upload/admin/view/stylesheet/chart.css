@@ -1,0 +1,84 @@
+.chart-legend-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    pointer-events: auto;
+  }
+  
+  .chart-legend-list {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 2px 5px;
+    font-size: 10px;
+    gap: 2px;
+    list-style: none;
+    margin: 0;
+  }
+  
+  .chart-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+  
+  .chart-legend-item:hover {
+    opacity: 0.7;
+  }
+  
+  .chart-legend-box {
+    width: 12px;
+    height: 12px;
+    display: inline-block;
+    border-radius: 2px;
+  }
+  
+  .chart-legend-text {
+    font-size: 12px;
+    font-family: main_font;
+  }
+
+.custom-tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: rgba(0,0,0,0.7);
+    border-radius: 6px;
+    padding: 15px;
+    color: white;
+    font-family: main_font;
+    font-size: 13px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    direction: rtl;
+    max-width: 200px;
+    opacity: 0;
+    transition: opacity 0.1s ease;
+  }
+  
+  .custom-tooltip .tooltip-title {
+    text-align: center;
+    font-weight: bold;
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  
+  .custom-tooltip .tooltip-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 0;
+  }
+  
+  .custom-tooltip .tooltip-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+  
+  .custom-tooltip .tooltip-text {
+    font-size: 13px;
+    color: white;
+  }
+  

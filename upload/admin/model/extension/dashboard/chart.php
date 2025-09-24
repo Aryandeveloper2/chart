@@ -24,6 +24,14 @@ class ModelExtensionDashboardChart extends Model {
 				'total' => $result['total']
 			);
 		}
+		//نال برای ساعت های آینده
+		$current_hour = (int)date('G');
+		foreach ($order_data as $hour => &$data) {
+			if ($data['total'] == 0 && $hour > $current_hour) {
+				$data['total'] = null;
+			}
+		}
+		unset($data);
 
 		return $order_data;
 	}
@@ -34,6 +42,7 @@ class ModelExtensionDashboardChart extends Model {
 		$today = date('w'); // 0 = یکشنبه, 6 = شنبه
 		$days_since_saturday = ($today == 6) ? 0 : ($today + 1);
 		$date_start = strtotime("today -{$days_since_saturday} days");
+		$today_date = date('Y-m-d');
 	
 		for ($i = 0; $i < 7; $i++) {
 			$date = date('Y-m-d', $date_start + ($i * 86400));
@@ -57,6 +66,13 @@ class ModelExtensionDashboardChart extends Model {
 				$order_data[$date_only]['total'] = (int)$result['total'];
 			}
 		}
+		//نال برای روز های آینده
+		foreach ($order_data as $date => &$data) {
+			if ($data['total'] == 0 && $date > $today_date) {
+				$data['total'] = null;
+			}
+		}
+		unset($data);
 	
 		return array_values($order_data);
 	}
@@ -171,6 +187,14 @@ class ModelExtensionDashboardChart extends Model {
 			);
 		}
 
+		//نال برای ساعت های آینده
+		$current_hour = (int)date('G');
+		foreach ($customer_data as $hour => &$data) {
+			if ($data['total'] == 0 && $hour > $current_hour) {
+				$data['total'] = null;
+			}
+		}
+		unset($data);
 		return $customer_data;
 	}
 
@@ -180,6 +204,8 @@ class ModelExtensionDashboardChart extends Model {
 		$today = date('w'); // 0=یکشنبه ... 6=شنبه
 		$days_since_saturday = ($today == 6) ? 0 : ($today + 1);
 		$date_start = strtotime("-{$days_since_saturday} days");
+		$today_date = date('Y-m-d');
+
 	
 		for ($i = 0; $i < 7; $i++) {
 			$date = date('Y-m-d', $date_start + ($i * 86400));
@@ -202,8 +228,14 @@ class ModelExtensionDashboardChart extends Model {
 				$customer_data[$date_only]['total'] = (int)$result['total'];
 			}
 		}
-	
-	
+		//نال برای روز های آینده
+		foreach ($customer_data as $date => &$data) {
+			if ($data['total'] == 0 && $date > $today_date) {
+				$data['total'] = null;
+			}
+		}
+		unset($data);
+
 		return array_values($customer_data);
 	}
 	public function getTotalCustomersByWeek() {
